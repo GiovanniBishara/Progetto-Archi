@@ -1,0 +1,414 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage[italian]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{mdframed}
+\usepackage{newunicodechar}
+\newunicodechar{₂}{$_2$}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{shapes, arrows, positioning}
+
+% Configurazione listings per codice Python
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% Configurazione geometria pagina
+\geometry{
+    a4paper,
+    left=25mm,
+    right=25mm,
+    top=25mm,
+    bottom=25mm
+}
+
+% Stile per i box teorici
+\newmdenv[
+    skipabove=15pt,
+    skipbelow=15pt,
+    linewidth=1pt,
+    linecolor=blue!50,
+    backgroundcolor=blue!5,
+    innerleftmargin=10pt,
+    innerrightmargin=10pt,
+    innertopmargin=10pt,
+    innerbottommargin=10pt,
+]{teoria}
+
+% Titolo
+\title{\textbf{Pipeline di Data Quality e Machine Learning}}
+\author{
+    Bishara Giovanni -  \\
+    Singh Probjot - 869434
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Questa relazione descrive una pipeline completa per la gestione della qualità dei dati e l'implementazione di modelli di machine learning.
+Il sistema combina fasi di preprocessing, trasformazione, verifica della qualità dei dati, addestramento di modelli predittivi (SVM e Decision Tree)
+e valutazione delle performance. L'intero processo è orchestrato utilizzando il framework Luigi, che garantisce l'esecuzione ordinata delle task
+e la gestione automatica delle dipendenze.
+\end{abstract}
+
+\tableofcontents
+
+\section{Introduzione}
+\subsection{Obiettivi della Pipeline}
+Questa pipeline è stata progettata per:
+\begin{itemize}
+    \item Verificare la qualità dei dati attraverso 4 dimensioni fondamentali
+    \item Addestrare modelli di classificazione per prevedere il tipo di vino (rosso/bianco)
+    \item Valutare oggettivamente le prestazioni dei modelli
+    \item Fornire un framework riproducibile e scalabile
+\end{itemize}
+
+\subsection{Architettura Generale}
+Il processo si articola in tre fasi principali:
+\begin{enumerate}
+    \item \textbf{Preprocessing Dati}: Pulizia, trasformazione e riduzione dimensionalità
+    \item \textbf{Modellazione ML}: Addestramento di SVM e Decision Tree
+    \item \textbf{Verifica DQ}: Controlli di qualità su 4 dimensioni
+\end{enumerate}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    block/.style={rectangle, draw, fill=blue!10, text width=8em, text centered, rounded corners, minimum height=3em},
+    line/.style={draw, -latex'},
+    cloud/.style={draw, ellipse,fill=red!10, minimum height=2em}
+]
+
+% Nodi
+\node [block] (preproc) {Data Preprocessing};
+\node [block, below of=preproc] (transform) {Data Transformation};
+\node [block, below of=transform] (pca) {PCA Task};
+\node [block, right=3cm of pca] (split) {Split Dataset};
+\node [block, below left=1cm and 0.5cm of split] (svm) {SVM Model};
+\node [block, below right=1cm and 0.5cm of split] (dt) {Decision Tree Model};
+\node [block, below of=split] (eval) {Performance Evaluation};
+\node [block, left=3cm of transform] (complete) {Completeness Check};
+\node [block, below of=complete] (consist) {Consistency Check};
+\node [block, below of=consist] (unique) {Uniqueness Check};
+\node [block, below of=unique] (accuracy) {Accuracy Check};
+
+% Connessioni
+\path [line] (preproc) -- (transform);
+\path [line] (transform) -- (pca);
+\path [line] (pca) -- (split);
+\path [line] (split) -- (svm);
+\path [line] (split) -- (dt);
+\path [line] (svm) -- (eval);
+\path [line] (dt) -- (eval);
+\path [line] (transform) -- (complete);
+\path [line] (complete) -- (consist);
+\path [line] (consist) -- (unique);
+\path [line] (unique) -- (accuracy);
+
+% Legenda
+\node [above=0.5cm of preproc, font=\bfseries] (flowlabel) {Flusso principale};
+\node [left=0.5cm of complete, font=\bfseries, align=center] (dqlabel) {Data Quality\\Checks};
+
+\end{tikzpicture}
+\caption{Architettura completa della pipeline}
+\label{fig:architecture}
+\end{figure}
+
+\section{Teoria: Le 4 Dimensioni della Data Quality}
+\begin{teoria}
+    \textbf{Data Quality} si riferisce alla capacità dei dati di soddisfare i requisiti del loro utilizzo previsto.
+    È composta da quattro dimensioni fondamentali:
+\end{teoria}
+
+\subsection{Completezza (Completeness)}
+Misura la presenza di valori mancanti nel dataset. Un dato è completo quando tutti i valori attesi sono presenti.
+
+\textbf{Soglia}: \(<3\%\) dei record totali
+
+\[
+\text{Completeness Score} = 1 - \frac{\text{Numero valori mancanti}}{\text{Totale valori attesi}}
+\]
+
+\subsection{Consistenza (Consistency)}
+Verifica la coerenza logica dei dati e l'assenza di valori anomali. Utilizza tre approcci:
+\begin{enumerate}
+    \item \textbf{Controllo dominio}: Valori devono essere in range fisici/chimici accettabili
+    \item \textbf{Metodo statistico}: Identifica outlier con \( \text{media} \pm 3\sigma \)
+    \item \textbf{Metodo IQR}: \( [Q1 - 1.5 \times IQR, Q3 + 1.5 \times IQR] \)
+\end{enumerate}
+
+\subsection{Unicità (Uniqueness)}
+Garantisce che non ci siano duplicati e che tutte le feature siano informative:
+\begin{itemize}
+    \item Record duplicati: Righe identiche
+    \item Feature non informative: Colonne con un solo valore distinto
+\end{itemize}
+
+\subsection{Accuratezza (Accuracy)}
+Verifica la correttezza dei tipi di dato e la conformità agli schemi attesi:
+\begin{itemize}
+    \item \texttt{type}: Booleano (0=rosso, 1=bianco)
+    \item Altre feature: Numeriche
+\end{itemize}
+
+\section{Implementazione della Pipeline}
+
+\subsection{Preprocessing Dati}
+
+\subsubsection{DataPreprocessing}
+\begin{itemize}
+    \item \textbf{Input}: \texttt{winetype.csv}
+    \item \textbf{Output}: Dataset pulito (\texttt{winetype\_cleaned.csv})
+    \item \textbf{Operazioni}:
+    \begin{enumerate}
+        \item Rimozione record con valori mancanti
+        \item Eliminazione duplicati
+        \item Simulazione dati "sporchi" per test di qualità
+    \end{enumerate}
+\end{itemize}
+
+\subsubsection{DataTransformation}
+\begin{itemize}
+    \item \textbf{Input}: Dataset pulito
+    \item \textbf{Output}: Dataset trasformato (\texttt{winetype\_transformed.csv})
+    \item \textbf{Operazioni}:
+    \begin{enumerate}
+        \item Encoding variabile target "type" (rosso=0, bianco=1)
+        \item Rimozione feature "quality" (irrilevante per classificazione)
+    \end{enumerate}
+\end{itemize}
+
+\subsubsection{PCATask}
+\begin{itemize}
+    \item \textbf{Input}: Dataset trasformato
+    \item \textbf{Output}: Dataset ridotto dimensionalmente (\texttt{winetype\_pca.csv})
+    \item \textbf{Operazioni}:
+    \begin{enumerate}
+        \item Standardizzazione delle feature
+        \item Riduzione dimensionalità con PCA (11 feature \(\rightarrow\) 5 componenti principali)
+    \end{enumerate}
+\end{itemize}
+
+\subsubsection{SplitDataset}
+\begin{itemize}
+    \item \textbf{Input}: Dataset PCA
+    \item \textbf{Output}: Training set (80\%) e Test set (20\%)
+    \item \textbf{Note}: Split stratificato per mantenere la distribuzione delle classi
+\end{itemize}
+
+\subsection{Modellazione Machine Learning}
+
+\subsubsection{SVMModel}
+\begin{itemize}
+    \item \textbf{Algoritmo}: Support Vector Machine
+    \item \textbf{Kernel}: Lineare
+    \item \textbf{Output}: Modello serializzato (\texttt{svm\_model.pkl})
+    \item \textbf{Parametri}:
+    \begin{itemize}
+        \item C=1.0
+        \item random\_state=42
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{DTCModel}
+\begin{itemize}
+    \item \textbf{Algoritmo}: Decision Tree Classifier
+    \item \textbf{Output}: Modello serializzato (\texttt{dtc\_model.pkl})
+    \item \textbf{Parametri}:
+    \begin{itemize}
+        \item max\_depth=5
+        \item min\_samples\_split=10
+        \item random\_state=42
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{PerformanceEval}
+\begin{itemize}
+    \item \textbf{Input}: Modelli addestrati e test set
+    \item \textbf{Output}: Report metriche (\texttt{metrics.csv})
+    \item \textbf{Metriche calcolate}:
+    \begin{itemize}
+        \item Accuratezza (Accuracy)
+        \item Precisione (Precision)
+        \item Recall (Sensibilità)
+        \item F1-score
+    \end{itemize}
+    \item \textbf{Intervalli confidenza}: Calcolati con cross-validation stratificata a 10 fold
+\end{itemize}
+
+\begin{teoria}
+    \textbf{Formula intervallo confidenza}:
+    \[
+    \bar{x} \pm t \frac{s}{\sqrt{n}}
+    \]
+    Dove:
+    \begin{itemize}
+        \item \(\bar{x}\): Media delle metriche
+        \item \(t\): Valore t-distribuzione per \(\alpha = 0.05\)
+        \item \(s\): Deviazione standard
+        \item \(n\): Numero di campioni
+    \end{itemize}
+\end{teoria}
+
+\subsection{Verifica Data Quality}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l l l}
+\toprule
+\textbf{Task} & \textbf{Soglia} & \textbf{Metodo} \\
+\midrule
+Completeness & <3\% valori mancanti & Conteggio valori nulli \\
+Consistency & <3\% outlier & 3 metodi: dominio, std, IQR \\
+Uniqueness & <3\% duplicati & Conteggio record duplicati \\
+Accuracy & 100\% tipi corretti & Verifica tipi di dato \\
+\bottomrule
+\end{tabular}
+\caption{Soglie e metodi per i controlli di qualità}
+\label{tab:dq_checks}
+\end{table}
+
+\section{Esecuzione e Risultati}
+
+\subsection{Comando di Esecuzione}
+La pipeline si avvia con:
+\begin{lstlisting}[language=bash]
+python3 -m luigi --module pipeline FullPipeline --local-scheduler
+\end{lstlisting}
+
+\subsection{Output Attesi}
+\begin{itemize}
+    \item \texttt{datasets/}: File CSV trasformati
+    \item \texttt{models/}: Modelli serializzati (SVM e Decision Tree)
+    \item \texttt{reports/metrics.csv}: Report prestazioni modelli
+    \begin{lstlisting}
+model_name,accuracy,precision,recall,f1_score
+SVM,0.92,0.93,0.91,0.92
+DecisionTree,0.88,0.87,0.89,0.88
+    \end{lstlisting}
+    \item \texttt{pipeline.log}: Log dettagliato dell'esecuzione
+\end{itemize}
+
+\subsection{Interpretazione Risultati}
+\begin{itemize}
+    \item \textbf{Accuratezza > 90\%}: Modello eccellente
+    \item \textbf{Accuratezza 80-90\%}: Modello buono
+    \item \textbf{Accuratezza < 80\%}: Necessità di miglioramento
+    \item \textbf{F1-score}: Media armonica tra precisione e recall (ottimo indicatore per dataset sbilanciati)
+\end{itemize}
+
+\section{Conclusioni}
+Questa pipeline rappresenta un framework completo per:
+\begin{itemize}
+    \item Garantire dati affidabili attraverso controlli di qualità automatizzati
+    \item Sviluppare modelli ML robusti per la classificazione
+    \item Valutare oggettivamente le prestazioni
+    \item Documentare l'intero processo tramite logging strutturato
+\end{itemize}
+
+L'approccio modulare e configurabile lo rende adattabile a diversi contesti e tipi di dataset, non solo al dominio enologico.
+L'utilizzo di Luigi garantisce l'esecuzione ordinata delle task e la gestione automatica delle dipendenze.
+
+\begin{thebibliography}{9}
+\bibitem{luigi}
+Spotify. (2012).
+\textit{Luigi: Python package for building complex pipelines}.
+GitHub repository.
+
+\bibitem{dama}
+DAMA International. (2017).
+\textit{DAMA-DMBOK: Data Management Body of Knowledge} (2nd ed.).
+
+\bibitem{scikit}
+Pedregosa, F. et al. (2011).
+\textit{Scikit-learn: Machine Learning in Python}.
+Journal of Machine Learning Research.
+\end{thebibliography}
+
+\appendix
+\section{Codice Configurazione Luigi}
+\begin{lstlisting}[language=python, caption=Esempio file luigi.cfg]
+[DataPreprocessing]
+input_csv = datasets/winetype.csv
+cleaned_csv = datasets/cleaned_data.csv
+
+[DataTransformation]
+transformed_csv = datasets/transformed_data.csv
+
+[PCATask]
+pca_csv = datasets/pca_data.csv
+
+[SplitDataset]
+train_csv = datasets/train_data.csv
+test_csv = datasets/test_data.csv
+
+[SVMModel]
+svm_model_file = models/svm_model.pkl
+
+[DTCModel]
+dtc_model_file = models/dtc_model.pkl
+
+[PerformanceEval]
+metrics_csv = reports/metrics.csv
+\end{lstlisting}
+
+\section{Schema Dataset Originale}
+\begin{table}[h]
+\centering
+\begin{tabular}{l l l}
+\toprule
+\textbf{Feature} & \textbf{Tipo} & \textbf{Descrizione} \\
+\midrule
+type & categorico & Rosso (0) o Bianco (1) \\
+fixed acidity & numerico & Acidità fissa (g/dm³) \\
+volatile acidity & numerico & Acidità volatile (g/dm³) \\
+citric acid & numerico & Acido citrico (g/dm³) \\
+residual sugar & numerico & Zuccheri residui (g/dm³) \\
+chlorides & numerico & Cloruri (g/dm³) \\
+free sulfur dioxide & numerico & SO₂ libero (mg/dm³) \\
+total sulfur dioxide & numerico & SO₂ totale (mg/dm³) \\
+density & numerico & Densità (g/cm³) \\
+pH & numerico & pH \\
+sulphates & numerico & Solfati (g/dm³) \\
+alcohol & numerico & Alcol (\% vol) \\
+quality & categorico & Qualità percepita (0-10) \\
+\bottomrule
+\end{tabular}
+\caption{Schema del dataset originale del vino}
+\label{tab:wine_schema}
+\end{table}
+
+\end{document}
