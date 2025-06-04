@@ -20,9 +20,7 @@ Per ulteriori dettagli si consulti la relazione e/o il codice.
 
 ## Autori
 
-- Cavaleri Matteo - 875050
-- Gargiulo Elio - 869184
-- Piacente Cristian - 866020
+
 
 ## Introduzione al Dataset
 
