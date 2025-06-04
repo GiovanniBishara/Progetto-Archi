@@ -20,7 +20,8 @@ Per ulteriori dettagli si consulti la relazione e/o il codice.
 
 ## Autori
 
-
+Giovanni Bishara
+Probjot Singh
 
 ## Introduzione al Dataset
 

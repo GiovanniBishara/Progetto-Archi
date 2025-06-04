@@ -3,9 +3,6 @@ Pipeline for data preprocessing, transforming, modeling, and evaluating three wi
 It also checks four data quality measures, w.r.t a threshold.
 This script uses the Luigi library to manage tasks in a sequential and dependent way.
 
-Cavaleri Matteo - 875050
-Gargiulo Elio - 869184
-Piacente Cristian - 866020
 """
 
 import luigi
@@ -33,9 +30,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
-
 # Set up logger
-logging.basicConfig(filename='luigi.log', level=logging.INFO, 
+logging.basicConfig(filename='luigi.log', level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger = logging.getLogger('ml-pipeline')
 
@@ -58,8 +54,8 @@ default_paths = {
 }
 
 # Threshold for data quality measures
-dq_threshold = 3 # 3%
-dq_count_threshold = int(5295 / 100 * dq_threshold) # 158
+dq_threshold = 3  # 3%
+dq_count_threshold = int(5295 / 100 * dq_threshold)  # 158
 
 
 class InMemoryTarget(luigi.Target):
@@ -74,17 +70,16 @@ class InMemoryTarget(luigi.Target):
     # Luigi's complete method override
     def complete(self):
         return self.completed
-    
+
     # Luigi's exists method override
     def exists(self):
         return self.completed
 
 
-
 class DataPreprocessing(luigi.Task):
     """
     Task to preprocess the data by removing missing values and duplicates.
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     - cleaned-csv: Path to the output csv file for preprocessed data. Default: 'datasets/winetype_cleaned.csv'
@@ -93,15 +88,13 @@ class DataPreprocessing(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     cleaned_csv = luigi.Parameter(default=default_paths['cleaned_csv'])
 
-
     def requires(self):
         # winetype.csv is needed, use a fake task
         class FakeTask(luigi.Task):
             def output(_):
                 return luigi.LocalTarget(self.input_csv)
-            
+
         return FakeTask()
-    
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -135,16 +128,14 @@ class DataPreprocessing(luigi.Task):
         logger.info('Preprocessed data saved successfully!')
         logger.info(f'Finished task {self.__class__.__name__}')
 
-
     def output(self):
         return luigi.LocalTarget(self.cleaned_csv)
-    
 
 
 class DataTransformation(luigi.Task):
     """
     Task to transform the data by encoding categorical variables and dropping unnecessary columns.
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     - transformed-csv: Path for the output dataset with transformed features. Default: 'datasets/winetype_transformed.csv'
@@ -153,11 +144,9 @@ class DataTransformation(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     transformed_csv = luigi.Parameter(default=default_paths['transformed_csv'])
 
-
     def requires(self):
         # winetype_cleaned.csv is needed
         return DataPreprocessing(input_csv=self.input_csv)
-    
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -170,8 +159,8 @@ class DataTransformation(luigi.Task):
         logger.info(f'Data types before encoding and casting:\n{df.dtypes}')
 
         # Label Encoding (red = False, white = True)
-        df['type'] = LabelEncoder().fit_transform(df['type']) 
-        df['type'] = df['type'].astype(bool) # Cast to bool
+        df['type'] = LabelEncoder().fit_transform(df['type'])
+        df['type'] = df['type'].astype(bool)  # Cast to bool
 
         logger.info('Label encoded the target, which is now bool (red = False, white = True)')
 
@@ -195,16 +184,14 @@ class DataTransformation(luigi.Task):
         logger.info('Transformed data saved successfully!')
         logger.info(f'Finished task {self.__class__.__name__}')
 
-
     def output(self):
         return luigi.LocalTarget(self.transformed_csv)
-
 
 
 class PCATask(luigi.Task):
     """
     Task to perform Principal Component Analysis (PCA) for dimensionality reduction.
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     - pca-csv: Path to the output csv file for the PCA-transformed data. Default: 'datasets/winetype_pca.csv'
@@ -213,11 +200,9 @@ class PCATask(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     pca_csv = luigi.Parameter(default=default_paths['pca_csv'])
 
-
     def requires(self):
         # winetype_transformed.csv is needed
         return DataTransformation(input_csv=self.input_csv)
-    
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -246,7 +231,7 @@ class PCATask(luigi.Task):
         logger.info('Applied PCA to the data, with n_components = 5')
 
         # Convert the PCA data to DataFrame
-        pca_df = pd.DataFrame(pca_data, columns=[f'PC{i+1}' for i in range(pca_data.shape[1])])
+        pca_df = pd.DataFrame(pca_data, columns=[f'PC{i + 1}' for i in range(pca_data.shape[1])])
 
         # Add the target to the DataFrame
         pca_df.insert(0, 'type', df['type'])
@@ -257,17 +242,15 @@ class PCATask(luigi.Task):
         logger.info('PCA data saved successfully!')
         logger.info(f'Finished task {self.__class__.__name__}')
 
-
     def output(self):
         return luigi.LocalTarget(self.pca_csv)
-
 
 
 class SplitDataset(luigi.Task):
     """
     Splits the PCA dataset into training and testing sets.
     Outputs two files, one for training and one for testing.
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     - train-csv: Path for the output training set (after PCA). Default: 'datasets/winetype_pca_train.csv'
@@ -277,12 +260,10 @@ class SplitDataset(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     train_csv = luigi.Parameter(default=default_paths['train_csv'])
     test_csv = luigi.Parameter(default=default_paths['test_csv'])
-    
 
     def requires(self):
         # winetype_pca.csv is needed
         return PCATask(input_csv=self.input_csv)
-    
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -322,93 +303,20 @@ class SplitDataset(luigi.Task):
 
         # Save the test set to winetype_pca_test.csv
         test_df.to_csv(self.output()['test_csv'].path, index=False)
-        
+
         logger.info('Test set saved successfully!')
         logger.info(f'Finished task {self.__class__.__name__}')
-        
 
     def output(self):
         return {'train_csv': luigi.LocalTarget(self.train_csv),
                 'test_csv': luigi.LocalTarget(self.test_csv)}
-    
 
-
-class NNModel(luigi.Task):
-    """
-    Task to train and save a Neural Network model.
-    
-    Parameters:
-    - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
-    - nn-model-file: Path to save the trained Neural Network model. Default: 'models/nn_model.h5'
-    - nn-history-file: Path to save the training history. Default: 'models/nn_history.pkl'
-    """
-
-    input_csv = luigi.Parameter(default=default_paths['input_csv'])
-    nn_model_file = luigi.Parameter(default=default_paths['nn_model_file'])
-    nn_history_file = luigi.Parameter(default=default_paths['nn_history_file'])
-
-
-    def requires(self):
-        # winetype_pca_train.csv is needed
-        return SplitDataset(input_csv=self.input_csv)
-    
-
-    def run(self):
-        logger.info(f'Started task {self.__class__.__name__}')
-
-        # Read winetype_pca_train.csv
-        train_df = pd.read_csv(self.input()['train_csv'].path)
-
-        # Split into X_train and y_train
-        X_train = train_df.drop('type', axis=1)
-        y_train = train_df['type']
-
-        logger.info('Retrieved the training set')
-
-        # Define the neural network
-        nn_model_naive = Sequential()
-
-        # A network with a number of initial neurons that is equal to the number of PCA components (5)
-        nn_model_naive.add(Dense(5, input_shape=(5,), activation='relu'))
-        # An output neuron with a sigmoid activation function (boolean target)
-        nn_model_naive.add(Dense(1, activation='sigmoid'))
-
-        # Compile the model
-        nn_model_naive.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-        logger.info('Built the model')
-
-        # Train the model
-        history_naive = nn_model_naive.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.2)
-
-        logger.info('Trained the model')
-
-        # Save the entire model to a HDF5 file
-        nn_model_naive.save(self.output()['nn_model_file'].path)
-
-        logger.info('Model saved successfully!')
-
-        # Create the history path directory if it doesn't exist
-        os.makedirs(os.path.dirname(self.output()['nn_history_file'].path), exist_ok=True)
-
-        # Save the training history to a .pkl file
-        with open(self.output()['nn_history_file'].path, 'wb') as f:
-            pickle.dump(history_naive.history, f)
-
-        logger.info('Training history saved successfully!')
-        logger.info(f'Finished task {self.__class__.__name__}')
-
-
-    def output(self):
-        return {'nn_model_file': luigi.LocalTarget(self.nn_model_file),
-                'nn_history_file': luigi.LocalTarget(self.nn_history_file)}
-    
 
 
 class SVMModel(luigi.Task):
     """
     Task to train and save a Support Vector Machine (SVM) model.
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     - svm-model-file: Path to save the trained SVM model. Default: 'models/svm_model.pkl'
@@ -417,11 +325,9 @@ class SVMModel(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     svm_model_file = luigi.Parameter(default=default_paths['svm_model_file'])
 
-
     def requires(self):
         # winetype_pca_train.csv is needed
         return SplitDataset(input_csv=self.input_csv)
-    
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -451,16 +357,14 @@ class SVMModel(luigi.Task):
         logger.info('Model saved successfully!')
         logger.info(f'Finished task {self.__class__.__name__}')
 
-
     def output(self):
         return luigi.LocalTarget(self.svm_model_file)
-    
 
 
 class DTCModel(luigi.Task):
     """
     Task to train and save a Decision Tree Classifier model.
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     - dtc-model-file: Path to save the trained Decision Tree model. Default: 'models/dtc_model.pkl'
@@ -469,11 +373,9 @@ class DTCModel(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     dtc_model_file = luigi.Parameter(default=default_paths['dtc_model_file'])
 
-
     def requires(self):
         # winetype_pca_train.csv is needed
         return SplitDataset(input_csv=self.input_csv)
-    
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -503,19 +405,17 @@ class DTCModel(luigi.Task):
         logger.info('Model saved successfully!')
         logger.info(f'Finished task {self.__class__.__name__}')
 
-
     def output(self):
         return luigi.LocalTarget(self.dtc_model_file)
-    
 
 
 class PerformanceEval(luigi.Task):
     """
     Evaluates the trained models' performance.
-    
+
     Outputs a csv file with performance metrics calculated both on the test set (global metrics)
     and using Stratified 10-fold Cross Validation (95% confidence intervals).
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     - metrics-csv: Path to save the performance metrics csv file. Default: 'performance/metrics.csv'
@@ -524,15 +424,12 @@ class PerformanceEval(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     metrics_csv = luigi.Parameter(default=default_paths['metrics_csv'])
 
-
     def requires(self):
         # winetype_pca.csv, nn_model.h5, nn_history.pkl, svm_model.pkl, dtc_model.pkl and winetype_pca_test.csv are needed
         return {'pca_csv': PCATask(input_csv=self.input_csv),
-                'nn_files': NNModel(input_csv=self.input_csv),
                 'svm_model_file': SVMModel(input_csv=self.input_csv),
                 'dtc_model_file': DTCModel(input_csv=self.input_csv),
                 'splitted_dataset_csv': SplitDataset(input_csv=self.input_csv)}
-
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -602,7 +499,6 @@ class PerformanceEval(luigi.Task):
 
         # For each model fill the structure with the metrics data
         for model_name in metrics_dict['model_name']:
-
             # Model instance
             model = models_dict[model_name]
 
@@ -629,9 +525,9 @@ class PerformanceEval(luigi.Task):
             metrics_dict['recall_interval_upper'].append(confidence_intervals['recall_interval'][1])
             metrics_dict['f1_score_interval_lower'].append(confidence_intervals['f1_score_interval'][0])
             metrics_dict['f1_score_interval_upper'].append(confidence_intervals['f1_score_interval'][1])
-            
+
             logger.info(f'Got the 95% confidence intervals for {model_name}')
-        
+
         # Convert the dictionary structure to DataFrame
         metrics_df = pd.DataFrame(metrics_dict)
 
@@ -641,21 +537,19 @@ class PerformanceEval(luigi.Task):
         # Append the data to metrics.csv
         with open(self.output().path, 'a') as f:
             # The header gets written only if the csv is empty
-            metrics_df.to_csv(f, mode='a', header=f.tell()==0, index=False, lineterminator='\n')
+            metrics_df.to_csv(f, mode='a', header=f.tell() == 0, index=False, lineterminator='\n')
 
         logger.info('Appended to csv the performance evaluation for each model')
         logger.info(f'Finished task {self.__class__.__name__}')
 
-
     def output(self):
         return luigi.LocalTarget(self.metrics_csv)
-    
 
 
 class Completeness(luigi.Task):
     """
     Task to check data completeness by verifying the presence of missing values on the transformed dataset.
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     """
@@ -663,11 +557,9 @@ class Completeness(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     _completion_flag = InMemoryTarget()
 
-
     def requires(self):
         # winetype_transformed.csv is needed
         return DataTransformation(input_csv=self.input_csv)
-
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -689,7 +581,7 @@ class Completeness(luigi.Task):
         logger.info('COMPLETENESS - MISSING VALUES RATIO:')
         logger.info('============================================================')
         logger.info(f'\n{completeness_ratio}\n\n')
-        
+
         # Missing values sum
         missing_values_sum = missing_values.sum()
 
@@ -697,24 +589,22 @@ class Completeness(luigi.Task):
 
         # Completeness check
         if missing_values_sum < dq_count_threshold:
-            self._completion_flag.completed = True # The task is now completed
+            self._completion_flag.completed = True  # The task is now completed
             logger.info('Completeness check passed')
         else:
             logger.error('Completeness check failed')
 
         logger.info(f'Finished task {self.__class__.__name__}')
 
-
     def output(self):
         # Return the custom target instead of a file-based target
         return self._completion_flag
 
 
-
 class Consistency(luigi.Task):
     """
     Task to check data consistency by verifying the presence of outliers and inconsistent values on the transformed dataset.
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     """
@@ -722,12 +612,10 @@ class Consistency(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     _completion_flag = InMemoryTarget()
 
-
     def requires(self):
         # This task depends on winetype_transformed.csv and the completion of Completeness
         return {'transformed_csv': DataTransformation(input_csv=self.input_csv),
                 'completeness_check': Completeness(input_csv=self.input_csv)}
-
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -738,14 +626,15 @@ class Consistency(luigi.Task):
         logger.info('Retrieved the transformed dataset')
 
         # Test the data quality consistency measure on the set
-        inconsistent_values_default, inconsistent_values_bounded_std, inconsistent_values_bounded_iqr, outliers_std, outliers_iqr, std_bounds, iqr_bounds = dq.consistency_test(df)
+        inconsistent_values_default, inconsistent_values_bounded_std, inconsistent_values_bounded_iqr, outliers_std, outliers_iqr, std_bounds, iqr_bounds = dq.consistency_test(
+            df)
 
         # Counter for outliers w.r.t the domain (default ranges)
         default_counter = 0
-        
+
         # Counter for outliers w.r.t the mean and std method
         std_counter = 0
-        
+
         # Counter for outliers w.r.t the IQR method
         iqr_counter = 0
 
@@ -792,7 +681,7 @@ class Consistency(luigi.Task):
         for feature, info in outliers_std.items():
             logger.info(f'Feature: {feature}')
             logger.info(f"Count of outliers: {info['count']}")
-            logger.info(f"Rows with outliers: {info['rows']}\n") # Add +2
+            logger.info(f"Rows with outliers: {info['rows']}\n")  # Add +2
         logger.info('')
         # Info about the outliers found using interquartile range
         logger.info('============================================================')
@@ -801,7 +690,7 @@ class Consistency(luigi.Task):
         for feature, info in outliers_iqr.items():
             logger.info(f'Feature: {feature}')
             logger.info(f"Count of outliers: {info['count']}")
-            logger.info(f"Rows with outliers: {info['rows']}\n") # Add +2
+            logger.info(f"Rows with outliers: {info['rows']}\n")  # Add +2
         logger.info('\n')
 
         logger.info(f'Count of outliers w.r.t the domain: {default_counter}')
@@ -817,7 +706,7 @@ class Consistency(luigi.Task):
                 # IQR consistency check
                 if iqr_counter < dq_count_threshold:
                     logger.info('All consistency checks passed')
-                    self._completion_flag.completed = True # The task is now completed
+                    self._completion_flag.completed = True  # The task is now completed
                 else:
                     logger.error('Consistency IQR check failed')
             else:
@@ -827,16 +716,14 @@ class Consistency(luigi.Task):
 
         logger.info(f'Finished task {self.__class__.__name__}')
 
-
     def output(self):
         return self._completion_flag
-    
 
 
 class Uniqueness(luigi.Task):
     """
     Task to check data uniqueness by verifying the presence of duplicate values on the transformed dataset.
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     """
@@ -844,12 +731,10 @@ class Uniqueness(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     _completion_flag = InMemoryTarget()
 
-
     def requires(self):
         # This task depends on winetype_transformed.csv and the completion of Consistency
         return {'transformed_csv': DataTransformation(input_csv=self.input_csv),
                 'consistency_check': Consistency(input_csv=self.input_csv)}
-
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -897,7 +782,7 @@ class Uniqueness(luigi.Task):
             # Duplicated records check
             if duplicate_sum < dq_count_threshold:
                 logger.info('All uniqueness checks passed')
-                self._completion_flag.completed = True # The task is now completed
+                self._completion_flag.completed = True  # The task is now completed
             else:
                 logger.error('Uniqueness duplicated records check failed')
         else:
@@ -905,16 +790,14 @@ class Uniqueness(luigi.Task):
 
         logger.info(f'Finished task {self.__class__.__name__}')
 
-
     def output(self):
         return self._completion_flag
-
 
 
 class Accuracy(luigi.Task):
     """
     Task to check data accuracy by verifying the correctness of data types on the transformed dataset.
-    
+
     Parameters:
     - input-csv: Path to the input csv file containing raw wine data. Default: 'datasets/winetype.csv'
     """
@@ -922,12 +805,10 @@ class Accuracy(luigi.Task):
     input_csv = luigi.Parameter(default=default_paths['input_csv'])
     _completion_flag = InMemoryTarget()
 
-
     def requires(self):
         # This task depends on winetype_transformed.csv and the completion of Uniqueness
         return {'transformed_csv': DataTransformation(input_csv=self.input_csv),
                 'uniqueness_check': Uniqueness(input_csv=self.input_csv)}
-
 
     def run(self):
         logger.info(f'Started task {self.__class__.__name__}')
@@ -956,16 +837,14 @@ class Accuracy(luigi.Task):
         # Accuracy check
         if correct_types:
             logger.info('Accuracy check passed')
-            self._completion_flag.completed = True # The task is now completed
+            self._completion_flag.completed = True  # The task is now completed
         else:
             logger.error('Accuracy check failed')
 
         logger.info(f'Finished task {self.__class__.__name__}')
 
-
     def output(self):
         return self._completion_flag
-
 
 
 class FullPipeline(luigi.WrapperTask):
@@ -974,6 +853,6 @@ class FullPipeline(luigi.WrapperTask):
 
     This is used for executing every single task of the pipeline.
     """
-    
+
     def requires(self):
         return [Accuracy(), PerformanceEval()]
