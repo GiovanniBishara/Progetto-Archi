@@ -1,9 +1,8 @@
 """
 This module generates a JSON configuration file for various experiments by defining different sets of parameters.
 
-Cavaleri Matteo - 875050
-Gargiulo Elio - 869184
-Piacente Cristian - 866020
+Giovanni Bishara - 869532
+Singh Probjot - 869434
 """
 
 import json

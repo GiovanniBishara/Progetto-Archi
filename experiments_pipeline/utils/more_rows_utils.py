@@ -1,9 +1,8 @@
 """
 This module provides functions to augment a dataset by adding or duplicating rows with generated features and labels.
 
-Cavaleri Matteo - 875050
-Gargiulo Elio - 869184
-Piacente Cristian - 866020
+Giovanni Bishara - 869532
+Singh Probjot - 869434
 """
 
 import pandas as pd

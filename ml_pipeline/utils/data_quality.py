@@ -5,9 +5,8 @@ This module leverages utility functions from utils.data_quality_utils
 to perform data quality assessments across four dimensions: 
 completeness, consistency, uniqueness, and accuracy.
 
-Cavaleri Matteo - 875050
-Gargiulo Elio - 869184
-Piacente Cristian - 866020
+Giovanni Bishara - 869532
+Singh Probjot - 869434
 """
 
 import utils.data_quality_utils as utils

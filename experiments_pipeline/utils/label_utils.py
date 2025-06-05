@@ -1,9 +1,8 @@
 """
 This module provides functions to manipulate labels in the dataset, i.e. flipping labels for a given percentage of red and white wines.
 
-Cavaleri Matteo - 875050
-Gargiulo Elio - 869184
-Piacente Cristian - 866020
+Giovanni Bishara - 869532
+Singh Probjot - 869434
 """
 
 import pandas as pd

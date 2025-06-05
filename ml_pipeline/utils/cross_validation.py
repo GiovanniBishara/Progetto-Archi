@@ -5,9 +5,8 @@ This module includes functions to perform detailed cross-validation for three ty
 Neural Networks, Support Vector Machines (SVM), and Decision Trees. 
 Each function exploits Stratified 10-Fold Cross Validation.
 
-Cavaleri Matteo - 875050
-Gargiulo Elio - 869184
-Piacente Cristian - 866020
+Giovanni Bishara - 869532
+Singh Probjot - 869434
 """
 
 import numpy as np

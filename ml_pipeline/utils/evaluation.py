@@ -4,9 +4,8 @@ Module for evaluating model performance on the wine dataset.
 This module contains functions to calculate global performance metrics and confidence intervals for different 
 machine learning models (Neural Networks, Support Vector Machines, and Decision Trees). 
 
-Cavaleri Matteo - 875050
-Gargiulo Elio - 869184
-Piacente Cristian - 866020
+Giovanni Bishara - 869532
+Singh Probjot - 869434
 """
 
 import numpy as np

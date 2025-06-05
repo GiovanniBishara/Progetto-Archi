@@ -1,9 +1,8 @@
 """
 This module provides functions to manipulate features in the dataset, such as dropping features, introducing missing values, outliers, and out of domain values.
 
-Cavaleri Matteo - 875050
-Gargiulo Elio - 869184
-Piacente Cristian - 866020
+Giovanni Bishara - 869532
+Singh Probjot - 869434
 """
 
 import pandas as pd

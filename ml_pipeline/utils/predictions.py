@@ -1,9 +1,8 @@
 """
 Module for generating predictions from machine learning models.
 
-Cavaleri Matteo - 875050
-Gargiulo Elio - 869184
-Piacente Cristian - 866020
+Giovanni Bishara - 869532
+Singh Probjot - 869434
 """
 
 import numpy as np
