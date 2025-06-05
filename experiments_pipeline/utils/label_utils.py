@@ -3,6 +3,8 @@ This module provides functions to manipulate labels in the dataset, i.e. flippin
 
 Giovanni Bishara - 869532
 Singh Probjot - 869434
+
+Inverte l'etichetta (type)
 """
 
 import pandas as pd

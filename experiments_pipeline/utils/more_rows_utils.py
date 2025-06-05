@@ -3,6 +3,11 @@ This module provides functions to augment a dataset by adding or duplicating row
 
 Giovanni Bishara - 869532
 Singh Probjot - 869434
+
+add_rows(input_csv, percentage, ranges={})
+Aggiunge un numero di righe artificiali pari a una percentuale del dataset originale.
+duplicate_rows(input_csv, wine_types_to_consider, percentage, flip_label=True)
+Duplica una percentuale di righe del tipo di vino specificato (red o white).
 """
 
 import pandas as pd

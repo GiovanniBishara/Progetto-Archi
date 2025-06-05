@@ -3,6 +3,10 @@ This module provides functions to manipulate features in the dataset, such as dr
 
 Giovanni Bishara - 869532
 Singh Probjot - 869434
+
+Drop colonne, Inserisce valori mancanti (NaN), Aggiunge outlier (valori anomali)
+Introduce valori fuori dominio (molto lontani dalla media)
+Calcola intervalli di valori considerati normali per ogni feature,
 """
 
 import pandas as pd
