@@ -28,7 +28,9 @@ def main():
     # Iterate through the JSON data
     for entry in json_data:
         # For each entry compute the parameters to pass to the Luigi pipeline, after getting the venv Python executable
-        cmd_parameters = [os.path.join(sys.prefix, "Scripts", "python"), "-m", "luigi", "--module", "pipeline", "FitPerformanceEval"]
+      # MACOS  cmd_parameters = [os.path.join(sys.prefix, "bin", "python3"), "-m", "luigi", "--module", "pipeline", "FitPerformanceEval"]
+        cmd_parameters = [os.path.join(sys.prefix, "scripts", "python"), "-m", "luigi", "--module", "pipeline", "FitPerformanceEval"]
+
         for key, value in entry.items():
             # Append the key
             cmd_parameters.append(f"--{key}")
