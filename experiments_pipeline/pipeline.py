@@ -929,7 +929,7 @@ class FitPerformanceEval(luigi.Task):
         logger.info('Retrieved the final dirty training set')
 
         # Neural Network by default interprets missing values as 0.0 (which leads to unexpected behavior): exploit and compare two imputation strategies (mean and EM)
-        # SVM errors while fitting if there are missing values, so the following imputed DataFrames will be used by both NN and SVM
+        # SVM errors while fitting if there are missing values, so the following imputed DataFrames will be used by SVM
         mean_dirty_train_df = Imputers().get("mean").fit_transform(float_dirty_train_df.copy())
         mean_dirty_train_df.columns = final_dirty_train_df.columns
         mean_dirty_train_df['type'] = mean_dirty_train_df['type'].astype(bool)
@@ -970,29 +970,6 @@ class FitPerformanceEval(luigi.Task):
 
         logger.info('Generated the whole shuffled sets')
 
-        # Define the neural networks, one for mean and one for EM
-        nn_model_naive_mean = Sequential()
-        nn_model_naive_em = Sequential()
-
-        # The networks have a number of initial neurons that is equal to the number of kept PCA components
-        # The output neurons use a sigmoid activation function (boolean target)
-        n_features = len(X_train.columns)
-        nn_model_naive_mean.add(Dense(n_features, input_shape=(n_features,), activation='relu'))
-        nn_model_naive_mean.add(Dense(1, activation='sigmoid'))
-        nn_model_naive_em.add(Dense(n_features, input_shape=(n_features,), activation='relu'))
-        nn_model_naive_em.add(Dense(1, activation='sigmoid'))
-
-        # Compile the models
-        nn_model_naive_mean.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-        nn_model_naive_em.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-        logger.info('Created two Neural Network instances')
-
-        # Fit the Neural Networks
-        nn_model_naive_mean.fit(X_train_mean, y_train, epochs=10, batch_size=32, validation_split=0.2)
-        nn_model_naive_em.fit(X_train_em, y_train, epochs=10, batch_size=32, validation_split=0.2)
-
-        logger.info('Trained the Neural Networks on imputed training sets!')
 
         # We need two SVM instances
         svm_model_naive_mean = svm.SVC(kernel='linear', C=0.001, random_state=42)
@@ -1018,8 +995,6 @@ class FitPerformanceEval(luigi.Task):
 
         # Map the model names to their instances
         models_dict = {
-            'Neural Network (mean)': nn_model_naive_mean,
-            'Neural Network (EM)': nn_model_naive_em,
             'SVM (mean)': svm_model_naive_mean,
             'SVM (EM)': svm_model_naive_em,
             'Decision Tree': dtc_model_naive
