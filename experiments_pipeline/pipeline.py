@@ -12,8 +12,6 @@ import logging
 
 import pandas as pd
 
-from keras.models import Sequential
-from keras.layers import Dense
 
 import os
 
@@ -928,7 +926,7 @@ class FitPerformanceEval(luigi.Task):
 
         logger.info('Retrieved the final dirty training set')
 
-        # Neural Network by default interprets missing values as 0.0 (which leads to unexpected behavior): exploit and compare two imputation strategies (mean and EM)
+
         # SVM errors while fitting if there are missing values, so the following imputed DataFrames will be used by SVM
         mean_dirty_train_df = Imputers().get("mean").fit_transform(float_dirty_train_df.copy())
         mean_dirty_train_df.columns = final_dirty_train_df.columns
