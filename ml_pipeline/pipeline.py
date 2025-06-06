@@ -425,7 +425,7 @@ class PerformanceEval(luigi.Task):
     metrics_csv = luigi.Parameter(default=default_paths['metrics_csv'])
 
     def requires(self):
-        # winetype_pca.csv, nn_model.h5, nn_history.pkl, svm_model.pkl, dtc_model.pkl and winetype_pca_test.csv are needed
+        # winetype_pca.csv, svm_model.pkl, dtc_model.pkl and winetype_pca_test.csv are needed
         return {'pca_csv': PCATask(input_csv=self.input_csv),
                 'svm_model_file': SVMModel(input_csv=self.input_csv),
                 'dtc_model_file': DTCModel(input_csv=self.input_csv),
@@ -452,11 +452,6 @@ class PerformanceEval(luigi.Task):
 
         logger.info('Retrieved the test set')
 
-        # Retrieve the Neural Network
-        nn_model_naive = load_model(self.input()['nn_files']['nn_model_file'].path)
-
-        logger.info('Loaded the Neural Network')
-
         # Retrieve the SVM
         svm_model_naive = joblib.load(self.input()['svm_model_file'].path)
 
@@ -469,7 +464,6 @@ class PerformanceEval(luigi.Task):
 
         # Map the model names to their instances
         models_dict = {
-            'Neural Network': nn_model_naive,
             'SVM': svm_model_naive,
             'Decision Tree': dtc_model_naive
         }
