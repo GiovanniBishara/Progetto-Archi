@@ -2,7 +2,7 @@
 Module for evaluating model performance on the wine dataset.
 
 This module contains functions to calculate global performance metrics and confidence intervals for different 
-machine learning models (Neural Networks, Support Vector Machines, and Decision Trees). 
+machine learning models (Support Vector Machines and Decision Trees).
 
 Giovanni Bishara - 869532
 Singh Probjot - 869434
@@ -21,7 +21,6 @@ from sklearn.tree import DecisionTreeClassifier
 import os, ultraimport
 
 get_predictions = ultraimport(f"{os.getcwd()}/../ml_pipeline/utils/predictions.py", "get_predictions")
-get_nn_scores = ultraimport(f"{os.getcwd()}/../ml_pipeline/utils/cross_validation.py", "get_nn_scores")
 get_svm_dtc_scores = ultraimport(f"{os.getcwd()}/../ml_pipeline/utils/cross_validation.py", "get_svm_dtc_scores")
 
 
@@ -62,10 +61,10 @@ def get_confidence_intervals(model, X, y):
     """
     Calculate 95% confidence intervals for the model's performance metrics using Cross Validation.
 
-    It supports Neural Networks, SVMs, and Decision Trees, thanks to specific utility functions designed for these models. 
+    It supports SVMs and Decision Trees, thanks to specific utility functions designed for these models.
 
     Parameters:
-    - model (Model): The model to evaluate. Must be either a Neural Network, SVM, or Decision Tree.
+    - model (Model): The model to evaluate. Must be either SVM or Decision Tree.
     - X (array-like): The full feature dataset used for Cross Validation.
     - y (array-like): The corresponding labels for the dataset.
 
@@ -75,12 +74,9 @@ def get_confidence_intervals(model, X, y):
     Returns None if the model is unsupported.
     """
 
-    # Neural Network
-    if isinstance(model, Sequential):
-        accuracy_scores, precision_scores, recall_scores, f1_scores = get_nn_scores(model, X, y)
     
     # SVM / Decision Tree
-    elif isinstance(model, svm.SVC) or isinstance(model, DecisionTreeClassifier):
+    if isinstance(model, svm.SVC) or isinstance(model, DecisionTreeClassifier):
         accuracy_scores, precision_scores, recall_scores, f1_scores = get_svm_dtc_scores(model, X, y)
     
     # Model is not supported

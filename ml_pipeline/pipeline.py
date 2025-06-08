@@ -46,8 +46,6 @@ default_paths = {
     'pca_csv': config.get('PCATask', 'pca_csv'),
     'train_csv': config.get('SplitDataset', 'train_csv'),
     'test_csv': config.get('SplitDataset', 'test_csv'),
-    'nn_model_file': config.get('NNModel', 'nn_model_file'),
-    'nn_history_file': config.get('NNModel', 'nn_history_file'),
     'svm_model_file': config.get('SVMModel', 'svm_model_file'),
     'dtc_model_file': config.get('DTCModel', 'dtc_model_file'),
     'metrics_csv': config.get('PerformanceEval', 'metrics_csv')

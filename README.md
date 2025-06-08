@@ -67,7 +67,7 @@ Una delle pipeline Luigi utilizzate per il progetto si concentra su
 
  - **preprocessing** e **trasformazione** del dataset originale
  - creazione dello spazio della PCA
- - **training** di 3 modelli (**Neural Network, SVM, Decision Tree**) di Machine Learning sul dataset risultante dalla PCA e relativa **Performance Evaluation**
+ - **training** di 2 modelli (**SVM, Decision Tree**) di Machine Learning sul dataset risultante dalla PCA e relativa **Performance Evaluation**
  - implementazioni di 4 dimensioni di qualità (**Completeness, Consistency, Uniqueness e Accuracy**)
 
 Di seguito viene rappresentata la struttura contenente i vari task:
@@ -152,7 +152,7 @@ Nota bene: l'esecuzione completa di tutti gli esperimenti potrebbe impiegare div
 	 - **Violin Plot per modello**
 	 - **per ogni metrica**, **istogramma e scatterplot**
 	 - **per ogni singolo esperimento** (e per ogni possibile parametro relativo all'esperimento), <ins>la variazione delle performance dei modelli di ML rispetto alla qualità del dataset</ins>
-	 - **Matrice di Correlazione tra i diversi tipi di SVM e Neural Network** (sia con un metodo di imputazione sia senza) per misurare la **correlazione tra le metriche dei due modelli messi a confronto**
+	 - **Matrice di Correlazione tra i diversi tipi di SVM per misurare la correlazione tra le metriche dei due modelli messi a confronto**
 
 #### Esecuzione
 

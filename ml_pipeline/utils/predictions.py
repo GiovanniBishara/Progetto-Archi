@@ -14,8 +14,6 @@ def get_predictions(model, X_test):
     """
     Generate predictions for the provided test dataset using a specified model.
 
-    This function has specific handling for neural network models, 
-    where the output is rounded to produce binary labels.
 
     Parameters:
     - model (Model): The model to be used for generating predictions. This can be any model that has a 
@@ -23,14 +21,13 @@ def get_predictions(model, X_test):
     - X_test (array-like): Test dataset on which predictions are to be made.
     
     Returns:
-    - array-like: An array of predictions. For neural network models, the predictions are rounded 
+    - array-like: An array of predictions.
     to the nearest integer to represent class labels.
     """
 
     # Get the predictions
     y_pred = model.predict(X_test)
 
-    # Neural network, rounding is needed
     if isinstance(model, Sequential):
         y_pred = np.round(y_pred)
 
